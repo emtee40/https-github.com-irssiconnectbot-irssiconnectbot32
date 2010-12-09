@@ -241,6 +241,7 @@ public final class Matcher implements MatchResult {
         result.last = this.last;
         result.groups = (int[])(this.groups.clone());
         result.groupNames = (String[])(this.groupNames.clone());
+		
         return result;
     }
 
@@ -370,6 +371,19 @@ public final class Matcher implements MatchResult {
             throw new IndexOutOfBoundsException("No group " + group);
         return groups[group * 2];
     }
+	
+	public int start(String groupName) {
+		if(groupName == null){
+			throw new IllegalStateException("Invalid group name");
+		}
+		
+		for(int groupId = 0 ; groupId < groupNames.length; groupId++){
+			if(groupName.equals(groupNames[groupId])){
+				return start(groupId);
+			}
+		}
+		throw new IllegalStateException("No group found.");
+	}
 
     /**
      * Returns the offset after the last character matched.  </p>
@@ -417,6 +431,18 @@ public final class Matcher implements MatchResult {
             throw new IndexOutOfBoundsException("No group " + group);
         return groups[group * 2 + 1];
     }
+	public int end(String groupName) {
+		if(groupName == null){
+			throw new IllegalStateException("Invalid group name");
+		}
+		
+		for(int groupId = 0 ; groupId < groupNames.length; groupId++){
+			if(groupName.equals(groupNames[groupId])){
+				return end(groupId);
+			}
+		}
+		throw new IllegalStateException("No group found.");
+	}
 
     /**
      * Returns the input subsequence matched by the previous match.
@@ -490,15 +516,10 @@ public final class Matcher implements MatchResult {
         if(groupName == null){
             return null;
         }
-        for(int group = 0 ; group < groupNames.length; group++){
-            if(groupName.equals(groupNames[group])){
-                if (first < 0)
-                    throw new IllegalStateException("No match found");
-                if (group < 0 || group > groupCount())
-                    throw new IndexOutOfBoundsException("No group " + group);
-                if ((groups[group*2] == -1) || (groups[group*2+1] == -1))
-                    return null;
-                return getSubSequence(groups[group * 2], groups[group * 2 + 1]).toString();
+		
+        for(int groupId = 0 ; groupId < groupNames.length; groupId++){
+            if(groupName.equals(groupNames[groupId])){
+				return group(groupId);
             }
         }
         return null;

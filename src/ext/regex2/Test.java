@@ -1,12 +1,10 @@
-package regex2;
-
-import regex2.Matcher;
-import regex2.Pattern;
+package ext.regex2;
 
 public class Test {
 
 	public static void main(String[] args) {
-		Pattern patUrl  = Pattern.compile("(?<login>\\w+) (?<id>\\d+)");
+
+		Pattern patUrl = Pattern.compile("(?<login>\\w+) (?<id>\\d+)");
 		Matcher matcher = patUrl.matcher("TEST 222");
 
 		if (matcher.find() && matcher.groupCount() > 0) {

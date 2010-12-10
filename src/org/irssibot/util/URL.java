@@ -412,29 +412,11 @@ public class URL {
 	// Just for developing and testing
 	public static void main(String[] args) {
 
-		URL.defaultFilter = URL.Filter.WEB;
-
-		String input = "lorum ipsum kala foo: http://www.technikfoo.de/mai " +
-					   "192.168.42.69/foobar  " +
-					   "https://192.168.42.60/foobar  " +
-					   "http://1234.123.123.123/foobar  " +
-					   "1234.123.123.123/foobar  " +
-					   "http://foo@bar.eu/~master  " +
-					   "localhost:8080/jepajeee  " +
-					   "kala.org  " +
-					   "foo.bar  " +
-					   "foo.fi  " +
-					   "bar.SE  " +
-					   "www.dotti.org  " +
-					   "username+temp@domain.fi  " +
-					   "mega.spammer@example.tld  " +
-					   "megadomain/fooojbab  " +
-					   "ssh-svn://user@host/foo/bar/baz  " +
-					   "foo://kala.org  " +
-					   "://kala/foo";
-
-		for (String url : findAll(input)) {
-			System.out.println("url = " + url);
-		}
+//		URL.defaultFilter = URL.Filter.NORMAL;
+//
+//		int i = 0;
+//		for (String url : findAll(input)) {
+//			System.out.println("url[" + (++i) + "] = " + url);
+//		}
 	}
 }

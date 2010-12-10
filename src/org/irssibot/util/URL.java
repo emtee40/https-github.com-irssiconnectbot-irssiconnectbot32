@@ -134,6 +134,8 @@ public class URL {
 
 	private static Pattern hostRe;
 
+	public static Filter   defaultFilter = Filter.NORMAL;
+
 	static {
 		countryCodes       = new HashSet<String>(Arrays.asList(countryCodeData));
 
@@ -168,7 +170,7 @@ public class URL {
 	 */
 	static ArrayList<String> findAll(String input) {
 
-		return findAll(input, Filter.NORMAL);
+		return findAll(input, defaultFilter);
 	}
 
 	/**
@@ -306,32 +308,6 @@ public class URL {
 		return this.uri;
 	}
 
-	// Just for developing and testing
-	public static void main(String[] args) {
-
-		String input = "lorum ipsum kala foo: http://www.technikfoo.de/mai " +
-					   "192.168.42.69/foobar  " +
-					   "https://192.168.42.60/foobar  " +
-					   "http://1234.123.123.123/foobar  " +
-					   "1234.123.123.123/foobar  " +
-					   "http://foo@bar.eu/~master  " +
-					   "localhost:8080/jepajeee  " +
-					   "kala.org  " +
-					   "foo.bar  " +
-					   "foo.fi  " +
-					   "bar.SE  " +
-					   "www.dotti.org  " +
-					   "username@domain  " +
-					   "megadomain/fooojbab  " +
-					   "ssh-svn://user@host/foo/bar/baz  " +
-					   "foo://kala.org  " +
-					   "://kala/foo";
-
-		for (String url : findAll(input, Filter.WEB)) {
-			System.out.println(url);
-		}
-	}
-
 	public interface Filter {
 		boolean validate(URL url);
 
@@ -359,9 +335,15 @@ public class URL {
 			}
 		};
 
-		public static final Filter EASY = new Filter() {
+		public static final Filter SIMPLE = new Filter() {
 			public boolean validate(URL url) {
 				return url.validIP || url.hasScheme || url.hasPort || url.hasTLD;
+			}
+		};
+
+		public static final Filter NONE = new Filter() {
+			public boolean validate(URL url) {
+				return true;
 			}
 		};
 
@@ -374,5 +356,40 @@ public class URL {
 				return NORMAL.validate(url);
 			}
 		};
+
+		public static final Filter WEB_STRICT = new Filter() {
+			public boolean validate(URL url) {
+
+				return STRICT.validate(url) && url.uri.toLowerCase().startsWith("http");
+			}
+		};
+	}
+
+	// Just for developing and testing
+	public static void main(String[] args) {
+
+		URL.defaultFilter = URL.Filter.WEB_STRICT;
+
+		String input = "lorum ipsum kala foo: http://www.technikfoo.de/mai " +
+					   "192.168.42.69/foobar  " +
+					   "https://192.168.42.60/foobar  " +
+					   "http://1234.123.123.123/foobar  " +
+					   "1234.123.123.123/foobar  " +
+					   "http://foo@bar.eu/~master  " +
+					   "localhost:8080/jepajeee  " +
+					   "kala.org  " +
+					   "foo.bar  " +
+					   "foo.fi  " +
+					   "bar.SE  " +
+					   "www.dotti.org  " +
+					   "username@domain  " +
+					   "megadomain/fooojbab  " +
+					   "ssh-svn://user@host/foo/bar/baz  " +
+					   "foo://kala.org  " +
+					   "://kala/foo";
+
+		for (String url : findAll(input)) {
+			System.out.println("url = " + url);
+		}
 	}
 }

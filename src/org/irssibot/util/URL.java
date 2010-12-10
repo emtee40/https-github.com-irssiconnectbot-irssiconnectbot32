@@ -114,7 +114,7 @@ public class URL {
 		"0123456789" +
 		";:&=+$," +
 		"-_.!~*()" +
-		"%@";
+		"%";
 
 	static private final String validPathCharsData =
 		"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" +
@@ -247,6 +247,8 @@ public class URL {
 
 				while (start > 0 && validUserinfoChars.contains(input.charAt(start - 1))) {
 					start--;
+
+					url.hasUserinfo = true;
 				}
 			}
 
@@ -302,6 +304,7 @@ public class URL {
 	public boolean validIP;
 	public boolean hasScheme;
 	public boolean hasPath;
+	public boolean hasUserinfo;
 
 	@Override
 	public String toString() {
@@ -323,15 +326,16 @@ public class URL {
 
 		public static final Filter NORMAL = new Filter() {
 			public boolean validate(URL url) {
+
 				if (url.type == URL.Host.IPV4 || url.type == URL.Host.IPV6) {
 					return url.validIP;
 				}
 
-				if (!url.hasScheme) {
+				if (!url.hasScheme && !url.hasPort) {
 					return url.validTLD;
 				}
 
-				return url.validIP || url.hasScheme || url.hasPort || url.hasTLD;
+				return url.hasScheme || url.hasPort || url.hasTLD;
 			}
 		};
 
@@ -350,7 +354,7 @@ public class URL {
 		public static final Filter WEB = new Filter() {
 			public boolean validate(URL url) {
 				if (url.hasScheme) {
-					return url.uri.toLowerCase().startsWith("http");
+					return url.uri.toLowerCase().startsWith("http") && url.validIP;
 				}
 
 				return NORMAL.validate(url);
@@ -363,12 +367,25 @@ public class URL {
 				return STRICT.validate(url) && url.uri.toLowerCase().startsWith("http");
 			}
 		};
+
+		public static final Filter EMAIL = new Filter() {
+			public boolean validate(URL url) {
+
+				return !url.hasPath && url.hasUserinfo && (url.type == Host.NAME);
+			}
+		};
+
+		public static final Filter EMAIL_STRICT = new Filter() {
+			public boolean validate(URL url) {
+				return EMAIL.validate(url) && url.validTLD;
+			}
+		};
 	}
 
 	// Just for developing and testing
 	public static void main(String[] args) {
 
-		URL.defaultFilter = URL.Filter.WEB_STRICT;
+		URL.defaultFilter = URL.Filter.EMAIL;
 
 		String input = "lorum ipsum kala foo: http://www.technikfoo.de/mai " +
 					   "192.168.42.69/foobar  " +
@@ -382,7 +399,8 @@ public class URL {
 					   "foo.fi  " +
 					   "bar.SE  " +
 					   "www.dotti.org  " +
-					   "username@domain  " +
+					   "username+temp@domain.fi  " +
+					   "mega.spammer@example.tld  " +
 					   "megadomain/fooojbab  " +
 					   "ssh-svn://user@host/foo/bar/baz  " +
 					   "foo://kala.org  " +

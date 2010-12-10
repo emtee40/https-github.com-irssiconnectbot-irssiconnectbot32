@@ -172,7 +172,7 @@ public class URL {
 	 *
 	 * @return List of urls.
 	 */
-	static ArrayList<String> findAll(String input) {
+	public static ArrayList<String> findAll(String input) {
 
 		return findAll(input, defaultFilter);
 	}
@@ -185,7 +185,7 @@ public class URL {
 	 *
 	 * @return List of urls.
 	 */
-	static ArrayList<String> findAll(String input, Filter filter) {
+	public static ArrayList<String> findAll(String input, Filter filter) {
 
 		ArrayList<String> ret = new ArrayList<String>();
 

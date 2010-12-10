@@ -12,7 +12,7 @@ import java.util.ArrayList;
 public class URLTest
 	extends TestCase {
 
-	private static final String INPUT = "lorum ipsum kala foo: http://www.technikfoo.de/mai " +
+	public static final String INPUT = "lorum ipsum kala foo: http://www.technikfoo.de/mai " +
 										"192.168.42.69/foobar  " +
 										"https://192.168.42.60/foobar  " +
 										"http://1234.123.123.123/foobar  " +

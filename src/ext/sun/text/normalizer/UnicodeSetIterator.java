@@ -61,7 +61,7 @@ public class UnicodeSetIterator {
      * <tt>string</tt> for the current iteration result.
      * @stable ICU 2.0
      */
-    public static int IS_STRING = -1;
+    public static final int IS_STRING = -1;
     
     /**
      * Current code point, or the special value <tt>IS_STRING</tt>, if

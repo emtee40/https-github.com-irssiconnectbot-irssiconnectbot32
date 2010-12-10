@@ -2503,8 +2503,7 @@ public final class NormalizerImpl {
         int    destIndex = 0; 
         int    destLimit = dest.length;
 
-        char[] buffer = new char[3];
-        int prevSrc;
+		int prevSrc;
         long norm32;
         int ccOrQCMask; 
         int qcMask = QC_NFD;

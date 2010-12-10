@@ -137,8 +137,6 @@ public class URL {
 	static private final Set<Character> validSchemeChars;
 	private static       Pattern        hostRe;
 
-	public static Filter defaultFilter = Filter.NORMAL;
-
 	static {
 		countryCodes = new HashSet<String>(Arrays.asList(countryCodeData));
 
@@ -174,7 +172,7 @@ public class URL {
 	 */
 	public static ArrayList<String> findAll(String input) {
 
-		return findAll(input, defaultFilter);
+		return findAll(input, URL.Filter.NORMAL);
 	}
 
 	/**
@@ -407,16 +405,5 @@ public class URL {
 				return EMAIL.validate(url) && url.validTLD;
 			}
 		};
-	}
-
-	// Just for developing and testing
-	public static void main(String[] args) {
-
-//		URL.defaultFilter = URL.Filter.NORMAL;
-//
-//		int i = 0;
-//		for (String url : findAll(input)) {
-//			System.out.println("url[" + (++i) + "] = " + url);
-//		}
 	}
 }

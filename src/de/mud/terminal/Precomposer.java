@@ -22,7 +22,7 @@ package de.mud.terminal;
  * This data was taken from xterm's precompose.c
  */
 public class Precomposer {
-	public final static char precompositions[][] = {
+	protected final static char precompositions[][] = {
 		{ 0x226E, 0x003C, 0x0338},
 		{ 0x2260, 0x003D, 0x0338},
 		{ 0x226F, 0x003E, 0x0338},
@@ -1036,7 +1036,7 @@ public class Precomposer {
 		long that;
 
 		while (max >= min) {
-			mid = (min + max) / 2;
+			mid = (min + max) >> 1;
 			that = precompositions[mid][1] << UNICODE_SHIFT | precompositions[mid][2];
 			if (that < sought)
 				min = mid + 1;

@@ -3032,7 +3032,6 @@ LOOP:
 			TreeInfo info = new TreeInfo();
 
 			if (head.study(info)) { // Deterministic
-				GroupTail temp = (GroupTail) tail;
 				head = root = new GroupCurly(
 					head.next, curly.cmin,
 					curly.cmax, curly.type,

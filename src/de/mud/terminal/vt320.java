@@ -34,16 +34,16 @@ import java.util.Properties;
  * <P>
  * <B>Maintainer:</B> Marcus Meissner
  *
- * @version $Id: vt320.java 507 2005-10-25 10:14:52Z marcus $
+ * @version $Id: VT320.java 507 2005-10-25 10:14:52Z marcus $
  * @author  Matthias L. Jugel, Marcus Meissner
  */
-public abstract class vt320 extends VDUBuffer implements VDUInput {
+public abstract class VT320 extends VDUBuffer implements VDUInput {
 
   /** The current version id tag.<P>
-   * $Id: vt320.java 507 2005-10-25 10:14:52Z marcus $
+   * $Id: VT320.java 507 2005-10-25 10:14:52Z marcus $
    *
    */
-  public final static String ID = "$Id: vt320.java 507 2005-10-25 10:14:52Z marcus $";
+  public final static String ID = "$Id: VT320.java 507 2005-10-25 10:14:52Z marcus $";
 
   /** the debug level */
   private final static int debug = 0;
@@ -187,16 +187,16 @@ public void setScreenSize(int c, int r, boolean broadcast) {
 
 
   /**
-   * Create a new vt320 terminal and intialize it with useful settings.
+   * Create a new VT320 terminal and intialize it with useful settings.
    */
-  public vt320(int width, int height) {
+  public VT320(int width, int height) {
     super(width, height);
 
     debugStr = new StringBuilder();
 
     setVMS(false);
     setIBMCharset(false);
-    setTerminalID("vt320");
+    setTerminalID("VT320");
     setBufferSize(100);
     //setBorder(2, false);
 
@@ -330,9 +330,9 @@ public void setScreenSize(int c, int r, boolean broadcast) {
   }
 
   /**
-   * Create a default vt320 terminal with 80 columns and 24 lines.
+   * Create a default VT320 terminal with 80 columns and 24 lines.
    */
-  public vt320() {
+  public VT320() {
     this(80, 24);
   }
 
@@ -587,7 +587,7 @@ public void setScreenSize(int c, int r, boolean broadcast) {
   // the actual terminal emulation code comes here:
   // ===================================================================
 
-  private String terminalID = "vt320";
+  private String terminalID = "VT320";
   private String answerBack = "Use Terminal.answerback to set ...\n";
 
   // X - COLUMNS, Y - ROWS
@@ -764,7 +764,7 @@ public void setScreenSize(int c, int r, boolean broadcast) {
 
   private String osc,dcs;  /* to memorize OSC & DCS control sequence */
 
-  /** vt320 state variable (internal) */
+  /** VT320 state variable (internal) */
   private int term_state = TSTATE_DATA;
   /** in vms mode, set by Terminal.VMS property */
   private boolean vms = false;

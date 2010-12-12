@@ -3,7 +3,7 @@ tools/
 bin
 gen
 launchpad-*.tar.gz
-
+proguard.cfg
 .idea
 out
 Irssibot.iml

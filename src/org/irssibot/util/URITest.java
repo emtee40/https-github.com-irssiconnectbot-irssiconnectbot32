@@ -10,7 +10,7 @@ import java.util.ArrayList;
  * Date: 10.12.2010
  * Time: 16:05
  */
-public class URLTest
+public class URITest
 	extends TestCase {
 
 	public static final String INPUT = "lorum ipsum kala foo: http://www.technikfoo.de/mai " +
@@ -42,9 +42,9 @@ public class URLTest
 
 	}
 
-	private static void compareFindAll(String msg, URL.Filter filter, Object... excepted) {
+	private static void compareFindAll(String msg, URIHelper.Filter filter, Object... excepted) {
 
-		ArrayList<Uri> actual = URL.find(INPUT, filter);
+		ArrayList<Uri> actual = URIHelper.find(INPUT, filter);
 
 		StringBuffer sb = new StringBuffer();
 
@@ -66,7 +66,7 @@ public class URLTest
 	public void testFindAllEmailStrict()
 		throws Exception {
 
-		ArrayList<Uri> arr = URL.find(INPUT, URL.Filter.EMAIL_STRICT);
+		ArrayList<Uri> arr = URIHelper.find(INPUT, URIHelper.Filter.EMAIL_STRICT);
 
 		String msg = "Email Strict";
 
@@ -78,7 +78,7 @@ public class URLTest
 
 		compareFindAll(
 			"Email",
-			URL.Filter.EMAIL,
+			URIHelper.Filter.EMAIL,
 			"username+temp@domain.fi",
 			"mega.spammer@example.tld");
 	}
@@ -87,7 +87,7 @@ public class URLTest
 
 		compareFindAll(
 			"Web Strict",
-			URL.Filter.WEB_STRICT,
+			URIHelper.Filter.WEB_STRICT,
 			"http://www.technikfoo.de/mai",
 			"https://192.168.42.60/foobar",
 			"http://foo@bar.eu/~master");
@@ -97,7 +97,7 @@ public class URLTest
 
 		compareFindAll(
 			"Web",
-			URL.Filter.WEB,
+			URIHelper.Filter.WEB,
 			"192.168.42.69/foobar",
 			"https://192.168.42.60/foobar",
 			"localhost:8080/jepajeee",
@@ -115,7 +115,7 @@ public class URLTest
 		compareFindAll(
 			"None",
 
-			URL.Filter.NONE,
+			URIHelper.Filter.NONE,
 
 			"lorum",
 			"ipsum",
@@ -145,7 +145,7 @@ public class URLTest
 
 		compareFindAll(
 			"Simple",
-			URL.Filter.SIMPLE,
+			URIHelper.Filter.SIMPLE,
 			"http://www.technikfoo.de/mai",
 			"192.168.42.69/foobar",
 			"https://192.168.42.60/foobar",
@@ -168,7 +168,7 @@ public class URLTest
 
 		compareFindAll(
 			"Simple",
-			URL.Filter.NORMAL,
+			URIHelper.Filter.NORMAL,
 
 			"http://www.technikfoo.de/mai",
 			"192.168.42.69/foobar",
@@ -189,7 +189,7 @@ public class URLTest
 
 		compareFindAll(
 			"Strict",
-			URL.Filter.STRICT,
+			URIHelper.Filter.STRICT,
 			"http://www.technikfoo.de/mai",
 			"https://192.168.42.60/foobar",
 			"http://foo@bar.eu/~master",

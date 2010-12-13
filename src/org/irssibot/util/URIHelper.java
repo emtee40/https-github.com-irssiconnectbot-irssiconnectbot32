@@ -294,9 +294,9 @@ public class URIHelper {
 
 				try {
 					if (filter.validate(data)) {
-						
+
 						ret.add(Uri.parse(uri));
-						
+
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -311,47 +311,47 @@ public class URIHelper {
 
 	public interface Filter {
 
-		boolean validate(Data uri);
+		boolean validate(Data url);
 
 		public static final Filter STRICT = new Filter() {
 
-			public boolean validate(Data uri) {
+			public boolean validate(Data url) {
 
-				if (uri.type == URIHelper.Host.IPV4 || uri.type == URIHelper.Host.IPV6) {
-					return uri.validIP && uri.hasScheme;
+				if (url.type == URIHelper.Host.IPV4 || url.type == URIHelper.Host.IPV6) {
+					return url.validIP && url.hasScheme;
 				}
 
-				return uri.validTLD && uri.hasScheme;
+				return url.validTLD && url.hasScheme;
 			}
 		};
 
 		public static final Filter NORMAL = new Filter() {
 
-			public boolean validate(Data uri) {
+			public boolean validate(Data url) {
 
-				if (uri.type == URIHelper.Host.IPV4 || uri.type == URIHelper.Host.IPV6) {
-					return uri.validIP;
+				if (url.type == URIHelper.Host.IPV4 || url.type == URIHelper.Host.IPV6) {
+					return url.validIP;
 				}
 
-				if (!uri.hasScheme && !uri.hasPort) {
-					return uri.validTLD;
+				if (!url.hasScheme && !url.hasPort) {
+					return url.validTLD;
 				}
 
-				return uri.hasScheme || uri.hasPort || uri.hasTLD;
+				return url.hasScheme || url.hasPort || url.hasTLD;
 			}
 		};
 
 		public static final Filter SIMPLE = new Filter() {
 
-			public boolean validate(Data uri) {
+			public boolean validate(Data url) {
 
-				return uri.validIP || uri.hasScheme || uri.hasPort || uri.hasTLD;
+				return url.validIP || url.hasScheme || url.hasPort || url.hasTLD;
 			}
 		};
 
 		public static final Filter NONE = new Filter() {
 
-			public boolean validate(Data uri) {
+			public boolean validate(Data url) {
 
 				return true;
 			}
@@ -359,37 +359,37 @@ public class URIHelper {
 
 		public static final Filter WEB = new Filter() {
 
-			public boolean validate(Data uri) {
+			public boolean validate(Data url) {
 
-				if (uri.hasScheme) {
-					return uri.uri.toLowerCase().startsWith("http") && uri.validIP;
+				if (url.hasScheme) {
+					return url.uri.toLowerCase().startsWith("http") && url.validIP;
 				}
 
-				return NORMAL.validate(uri);
+				return NORMAL.validate(url);
 			}
 		};
 
 		public static final Filter WEB_STRICT = new Filter() {
 
-			public boolean validate(Data uri) {
+			public boolean validate(Data url) {
 
-				return STRICT.validate(uri) && uri.uri.toLowerCase().startsWith("http");
+				return STRICT.validate(url) && url.uri.toLowerCase().startsWith("http");
 			}
 		};
 
 		public static final Filter EMAIL = new Filter() {
 
-			public boolean validate(Data uri) {
+			public boolean validate(Data url) {
 
-				return !uri.hasPath && uri.hasUserinfo && (uri.type == Host.NAME);
+				return !url.hasPath && url.hasUserinfo && (url.type == Host.NAME);
 			}
 		};
 
 		public static final Filter EMAIL_STRICT = new Filter() {
 
-			public boolean validate(Data uri) {
+			public boolean validate(Data url) {
 
-				return EMAIL.validate(uri) && uri.validTLD;
+				return EMAIL.validate(url) && url.validTLD;
 			}
 		};
 	}

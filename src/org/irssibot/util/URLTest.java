@@ -1,5 +1,6 @@
 package org.irssibot.util;
 
+import android.net.Uri;
 import junit.framework.TestCase;
 
 import java.util.ArrayList;
@@ -43,13 +44,13 @@ public class URLTest
 
 	private static void compareFindAll(String msg, URL.Filter filter, Object... excepted) {
 
-		ArrayList<String> actual = URL.findAll(INPUT, filter);
+		ArrayList<Uri> actual = URL.find(INPUT, filter);
 
 		StringBuffer sb = new StringBuffer();
 
-		for (String s : actual) {
+		for (Uri s : actual) {
 			sb.append('"');
-			sb.append(s);
+			sb.append(s.toString());
 			sb.append("\", ");
 		}
 
@@ -65,7 +66,7 @@ public class URLTest
 	public void testFindAllEmailStrict()
 		throws Exception {
 
-		ArrayList<String> arr = URL.findAll(INPUT, URL.Filter.EMAIL_STRICT);
+		ArrayList<Uri> arr = URL.find(INPUT, URL.Filter.EMAIL_STRICT);
 
 		String msg = "Email Strict";
 

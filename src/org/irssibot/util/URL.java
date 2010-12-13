@@ -1,5 +1,6 @@
 package org.irssibot.util;
 
+import android.net.Uri;
 import ext.regex2.Matcher;
 import ext.regex2.Pattern;
 
@@ -16,6 +17,8 @@ import static java.lang.Integer.parseInt;
  * Time: 14:50
  */
 public class URL {
+
+	private static final String TAG = URL.class.getCanonicalName();
 
 	public enum Host {NONE, NAME, IPV4, IPV6;}
 
@@ -170,9 +173,9 @@ public class URL {
 	 *
 	 * @return List of urls.
 	 */
-	public static ArrayList<String> findAll(String input) {
+	public static ArrayList<Uri> find(String input) {
 
-		return findAll(input, URL.Filter.NORMAL);
+		return find(input, URL.Filter.NORMAL);
 	}
 
 	/**
@@ -183,116 +186,123 @@ public class URL {
 	 *
 	 * @return List of urls.
 	 */
-	public static ArrayList<String> findAll(String input, Filter filter) {
+	public static ArrayList<Uri> find(String input, Filter filter) {
 
-		ArrayList<String> ret = new ArrayList<String>();
+		ArrayList<Uri> ret = new ArrayList<Uri>();
 
-		Matcher m = hostRe.matcher(input);
+		synchronized (input) {
+			Matcher m = hostRe.matcher(input);
 
-		int pos = 0;
+			int pos = 0;
 
-		while (m.find(pos)) {
-			URL url = new URL();
-			String ipv4 = m.group("ipv4");
-			String ipv6 = m.group("ipv6");
-
-			url.host = m.group("host");
-			url.hasPort = m.group("port") != null;
-
-			if (m.group("hostname") != null) {
-
-				url.type = Host.NAME;
-			} else if (ipv4 != null) {
-
-				url.type = Host.IPV4;
-			} else if (ipv6 != null) {
-
-				url.type = Host.IPV6;
-			}
-
-			switch (url.type) {
-				case NAME:
-
-					url.hasTLD = m.group("domainlabel") != null;
-
-					if (url.hasTLD) {
-						url.validTLD = countryCodes.contains(m.group("toplabel").toLowerCase());
-					}
-
-					break;
-
-				case IPV4:
-
-					url.validIP = true;
-
-					for (String segment : ipv4.split("\\.")) {
-						int val = parseInt(segment);
-
-						if (val < 0 || val > 255) {
-							url.validIP = false;
+			
+			while (m.find(pos)) {
+				URL url = new URL();
+				String ipv4 = m.group("ipv4");
+				String ipv6 = m.group("ipv6");
+	
+				url.host = m.group("host");
+				url.hasPort = m.group("port") != null;
+	
+				if (m.group("hostname") != null) {
+	
+					url.type = Host.NAME;
+				} else if (ipv4 != null) {
+	
+					url.type = Host.IPV4;
+				} else if (ipv6 != null) {
+	
+					url.type = Host.IPV6;
+				}
+	
+				switch (url.type) {
+					case NAME:
+	
+						url.hasTLD = m.group("domainlabel") != null;
+	
+						if (url.hasTLD) {
+							url.validTLD = countryCodes.contains(m.group("toplabel").toLowerCase());
 						}
+	
+						break;
+	
+					case IPV4:
+	
+						url.validIP = true;
+	
+						for (String segment : ipv4.split("\\.")) {
+							int val = parseInt(segment);
+	
+							if (val < 0 || val > 255) {
+								url.validIP = false;
+							}
+						}
+	
+						break;
+	
+					case IPV6:
+						url.validIP = true;
+						break;
+	
+					default:
+						break;
+				}
+	
+				int start = m.start("host");
+				int end = m.end("host");
+	
+				if (start > 1 && input.charAt(start - 1) == '@') {
+					start -= 1;
+	
+					while (start > 0 && validUserinfoChars.contains(input.charAt(start - 1))) {
+						start--;
+	
+						url.hasUserinfo = true;
 					}
-
-					break;
-
-				case IPV6:
-					url.validIP = true;
-					break;
-
-				default:
-					break;
-			}
-
-			int start = m.start("host");
-			int end = m.end("host");
-
-			if (start > 1 && input.charAt(start - 1) == '@') {
-				start -= 1;
-
-				while (start > 0 && validUserinfoChars.contains(input.charAt(start - 1))) {
-					start--;
-
-					url.hasUserinfo = true;
 				}
-			}
-
-			if (start > 3 && input.substring(start - 3, start).equalsIgnoreCase("://")) {
-				start -= 3;
-
-				while (start > 0 && validSchemeChars.contains(input.charAt(start - 1))) {
-
-					start--;
-
-					url.hasScheme = true;
+	
+				if (start > 3 && input.substring(start - 3, start).equalsIgnoreCase("://")) {
+					start -= 3;
+	
+					while (start > 0 && validSchemeChars.contains(input.charAt(start - 1))) {
+	
+						start--;
+	
+						url.hasScheme = true;
+					}
 				}
-			}
-
-			if (end < input.length() && input.charAt(end) == '/') {
-				end++;
-
-				while (end < input.length() && validPathChars.contains(input.charAt(end))) {
+	
+				if (end < input.length() && input.charAt(end) == '/') {
 					end++;
+	
+					while (end < input.length() && validPathChars.contains(input.charAt(end))) {
+						end++;
+					}
+	
+					url.hasPath = true;
 				}
-
-				url.hasPath = true;
-			}
-
-			if (end < input.length() && input.charAt(end) != ' ') {
+	
+				if (end < input.length() && input.charAt(end) != ' ') {
+					pos = end;
+	
+					continue;
+				}
+	
+				String urlData = input.substring(start, end);
+	
+				url.uri = urlData;
+				url.port = url.hasPort ? parseInt(m.group("port")) : 0;
+	
+				try {
+					if (filter.validate(url)) {
+						ret.add(Uri.parse(urlData));
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+	
 				pos = end;
-
-				continue;
 			}
-
-			String urlData = input.substring(start, end);
-
-			url.uri = urlData;
-			url.port = url.hasPort ? parseInt(m.group("port")) : 0;
-
-			if (filter.validate(url)) {
-				ret.add(urlData);
-			}
-
-			pos = end;
 		}
 
 		return ret;

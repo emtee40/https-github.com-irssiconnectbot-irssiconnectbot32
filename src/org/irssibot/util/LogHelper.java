@@ -3,7 +3,7 @@ package org.irssibot.util;
 import android.util.Log;
 
 /**
- * User: treunanen
+ * User: parkerkane
  * Date: 13.12.2010
  * Time: 10:52
  */

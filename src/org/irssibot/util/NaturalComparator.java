@@ -6,7 +6,7 @@ import ext.regex2.Pattern;
 import java.util.Comparator;
 
 /**
-* User: treunanen
+* User: parkerkane
 * Date: 13.12.2010
 * Time: 14:02
 */

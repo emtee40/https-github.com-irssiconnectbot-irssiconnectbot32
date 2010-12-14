@@ -3,7 +3,7 @@ package org.irssibot.util;
 import java.util.Comparator;
 
 /**
- * User: treunanen
+ * User: parkerkane
  * Date: 13.12.2010
  * Time: 14:01
  */

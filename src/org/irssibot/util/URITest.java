@@ -6,7 +6,7 @@ import junit.framework.TestCase;
 import java.util.ArrayList;
 
 /**
- * User: treunanen
+ * User: parkerkane
  * Date: 10.12.2010
  * Time: 16:05
  */

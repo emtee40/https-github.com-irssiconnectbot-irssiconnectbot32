@@ -587,7 +587,7 @@ public void setScreenSize(int c, int r, boolean broadcast) {
   // the actual terminal emulation code comes here:
   // ===================================================================
 
-  private String terminalID = "VT320";
+  private String terminalID = "vt320";
   private String answerBack = "Use Terminal.answerback to set ...\n";
 
   // X - COLUMNS, Y - ROWS

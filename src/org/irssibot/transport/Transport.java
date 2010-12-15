@@ -78,7 +78,12 @@ public abstract class Transport {
 
 	public void stopRelay() {
 		if (relayThread != null) {
-			relayThread.interrupt();
+			try {
+				relayThread.interrupt();
+			} catch (Exception e) {
+				e.printStackTrace();
+				ERROR("Exception:", e);
+			}
 		}
 
 		relayThread = null;

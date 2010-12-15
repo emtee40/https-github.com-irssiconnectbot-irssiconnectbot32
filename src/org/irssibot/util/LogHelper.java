@@ -85,7 +85,7 @@ public class LogHelper {
 
 			first = false;
 
-			sb.append(o.toString());
+			sb.append(o == null ? "<null>" : o.toString());
 		}
 
 		StackTraceElement s = Thread.currentThread().getStackTrace()[4];

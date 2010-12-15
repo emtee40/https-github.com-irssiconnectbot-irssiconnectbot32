@@ -1,6 +1,7 @@
 package org.irssibot.transport;
 
 import com.jcraft.jsch.*;
+import de.mud.terminal.VT320;
 import org.irssibot.util.LogHelper;
 
 import java.io.IOException;
@@ -20,7 +21,7 @@ public class SSH extends Transport {
 
 	private JSch    ssh;
 	private Session session;
-	private Channel channel;
+	private ChannelShell channel;
 	private boolean connected = false;
 
 	private InputStream  inputStream;
@@ -134,9 +135,12 @@ public class SSH extends Transport {
 
 	@Override
 	public void write(byte[] buffer) {
+		
+		DEBUG("writing data:", buffer);
 
 		try {
 			outputStream.write(buffer);
+			outputStream.flush();
 		} catch (IOException e) {
 			ERROR("Exception:", e.toString());
 			e.printStackTrace();
@@ -181,11 +185,13 @@ public class SSH extends Transport {
 			
 			try {
 				session.connect();
-				channel = session.openChannel("shell");
+				channel = (ChannelShell) session.openChannel("shell");
 
 				inputStream = channel.getInputStream();
 				outputStream = channel.getOutputStream();
-				
+
+				channel.setPtyType("xterm-color", 80, 50, 640, 480);
+
 				channel.connect();
 
 			} catch (JSchException e) {
@@ -195,7 +201,7 @@ public class SSH extends Transport {
 					showMessage("Error while connecting to server.");
 					ERROR("Error while connecting to server:", e.toString());
 				} catch (InterruptedException e1) {
-					ERROR("Exception:", e.toString());
+					ERROR("Exception:", e1.toString());
 					e1.printStackTrace();
 				}
 
@@ -207,7 +213,7 @@ public class SSH extends Transport {
 					showMessage("Error while getting streams.");
 					ERROR("Error while getting streams.");
 				} catch (InterruptedException e1) {
-					ERROR("Exception:", e.toString());
+					ERROR("Exception:", e1.toString());
 					e1.printStackTrace();
 				}
 
@@ -217,7 +223,7 @@ public class SSH extends Transport {
 				DEBUG("Connected to server");
 				
 				connected = true;
-
+				
 				startRelay();
 			}
 		}

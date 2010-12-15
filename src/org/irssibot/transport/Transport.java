@@ -1,12 +1,19 @@
 package org.irssibot.transport;
 
+import android.os.Handler;
+import android.os.Message;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static org.irssibot.util.LogHelper.DEBUG;
+import static org.irssibot.util.LogHelper.ERROR;
 
 /**
  * User: parkerkane
@@ -15,8 +22,9 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class Transport {
 
-	protected final AtomicReference<DataListener>        dataListener        = new AtomicReference<DataListener>();
-	protected final AtomicReference<InteractionListener> interactionListener = new AtomicReference<InteractionListener>();
+	protected final AtomicReference<Handler> dataHandler        = new AtomicReference<Handler>();
+	protected final AtomicReference<Handler> promptHandler = new AtomicReference<Handler>();
+	private final   Semaphore                responseLock       = new Semaphore(0);
 
 	private final Relay  relay       = new Relay(this);
 	private       Thread relayThread = null;
@@ -31,15 +39,15 @@ public abstract class Transport {
 
 	public abstract void disconnect();
 
-	public void setDataListener(DataListener listener) {
-		synchronized (dataListener) {
-			dataListener.set(listener);
+	public void setDataHandler(Handler handler) {
+		synchronized (dataHandler) {
+			dataHandler.set(handler);
 		}
 	}
 
-	public void setInteractionListener(InteractionListener listener) {
-		synchronized (interactionListener) {
-			interactionListener.set(listener);
+	public void setPromptHandler(Handler handler) {
+		synchronized (promptHandler) {
+			promptHandler.set(handler);
 		}
 	}
 
@@ -74,44 +82,91 @@ public abstract class Transport {
 		relayThread = null;
 	}
 
-	protected void showMessage(String message) {
-		synchronized (interactionListener) {
-			if (interactionListener.get() != null) {
+	protected void showMessage(String message)
+		throws InterruptedException {
 
-				interactionListener.get().onMessage(message);
+		synchronized (promptHandler) {
+			if (promptHandler.get() == null) {
+				return;
 			}
+
+			PromptMessage msg = new PromptMessage(PromptMessage.Type.Message, responseLock, message);
+
+			Message.obtain(promptHandler.get(), -1, msg).sendToTarget();
+
+			responseLock.acquire();
 		}
 	}
 
-	public boolean inputBoolean(String message) {
+	public boolean promptBoolean(String message)
+		throws InterruptedException {
+		
 		boolean val = false;
 
-		synchronized (interactionListener) {
-			if (interactionListener.get() != null) {
-				val = interactionListener.get().onBoolean(message);
+		synchronized (promptHandler) {
+			if (promptHandler.get() == null) {
+				return val;
 			}
+
+			PromptMessage msg = new PromptMessage(PromptMessage.Type.Boolean, responseLock, message);
+
+			DEBUG("Sending boolean message");
+			Message.obtain(promptHandler.get(), -1, msg).sendToTarget();
+
+			DEBUG("Waiting for response.");
+			responseLock.acquire();
+		
+			val = msg.responseBoolean.get();
+
+			DEBUG("Got response:", val);
 		}
+
 		return val;
 	}
 
-	public String inputPassword(String message) {
+	public String promptPassword(String message)
+		throws InterruptedException {
+		
 		String val = null;
 
-		synchronized (interactionListener) {
-			if (interactionListener.get() != null) {
-				val = interactionListener.get().onPassword(message);
+		synchronized (promptHandler) {
+			if (promptHandler.get() == null) {
+				return val;
 			}
+
+			PromptMessage msg = new PromptMessage(PromptMessage.Type.Password, responseLock, message);
+
+			DEBUG("Sending password message");
+			Message.obtain(promptHandler.get(), -1, msg).sendToTarget();
+
+			DEBUG("Waiting for response");
+			responseLock.acquire();
+			
+			val = msg.responseString.get();
+			
+			DEBUG("Got response:", "xxxxxxxxxx");
 		}
+
 		return val;
 	}
 
-	public String inputString(String message) {
+	public String promptString(String message)
+		throws InterruptedException {
+		
 		String val = null;
 
-		synchronized (interactionListener) {
-			if (interactionListener.get() != null) {
-				val = interactionListener.get().onInput(message);
+		synchronized (promptHandler) {
+			if (promptHandler.get() == null) {
+				return val;
 			}
+
+			PromptMessage msg = new PromptMessage(PromptMessage.Type.Message, responseLock, message);
+
+			Message.obtain(promptHandler.get(), -1, msg).sendToTarget();
+
+			responseLock.acquire();
+			
+			val = msg.responseString.get();
 		}
 		return val;
 	}
@@ -155,14 +210,16 @@ public abstract class Transport {
 
 			byte[] byteArray = byteBuffer.array();
 			char[] charArray = charBuffer.array();
+			
+			byteBuffer.limit(0);
 
 			while (true) {
-
+				
 				try {
 					int bytesToRead = byteBuffer.capacity() - byteBuffer.limit();
 					int offset = byteBuffer.arrayOffset() + byteBuffer.limit();
 					int bytesRead = transport.read(byteArray, offset, bytesToRead);
-
+					
 					if (bytesRead > 0) {
 						byteBuffer.limit(byteBuffer.limit() + bytesRead);
 
@@ -175,15 +232,28 @@ public abstract class Transport {
 						}
 
 						offset = charBuffer.position();
+						
+						DEBUG("Got data. Sending message:", offset, "bytes.");
 
-						synchronized (transport.dataListener) {
-							if (transport.dataListener.get() != null) {
-								transport.dataListener.get().onData(charArray, offset);
+						synchronized (transport.dataHandler) {
+							if (transport.dataHandler.get() != null) {
+								Message.obtain(
+									transport.dataHandler.get(),
+									-1,
+									new String(charArray, 0, offset)
+								).sendToTarget();
 							}
 						}
+						
+						charBuffer.clear();
 
+					} else {
+						Thread.sleep(100);
 					}
+				} catch (InternalError e) {
+					return;
 				} catch (Exception e) {
+					ERROR("Exception:", e.toString());
 					e.printStackTrace();
 
 					break;
@@ -193,4 +263,5 @@ public abstract class Transport {
 
 		}
 	}
+
 }

@@ -1,10 +1,15 @@
 package org.irssibot.transport;
 
 import com.jcraft.jsch.*;
+import org.irssibot.util.LogHelper;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+
+import static org.irssibot.util.LogHelper.DEBUG;
+import static org.irssibot.util.LogHelper.ERROR;
+import static org.irssibot.util.LogHelper.INFO;
 
 /**
  * User: parkerkane
@@ -41,26 +46,60 @@ public class SSH extends Transport {
 			}
 
 			public boolean promptPassword(String message) {
+				
+				DEBUG(message);
 
-				password = SSH.this.inputPassword(message);
+				try {
+					password = SSH.this.promptPassword(message);
+				} catch (InterruptedException e) {
+					ERROR("Exception:", e.toString());
+					e.printStackTrace();
+					
+					password = null;
+				}
 
 				return password != null;
 			}
 
 			public boolean promptPassphrase(String message) {
 
-				passphrase = SSH.this.inputPassword(message);
+				DEBUG(message);
+				
+				try {
+					passphrase = SSH.this.promptPassword(message);
+				} catch (InterruptedException e) {
+					ERROR("Exception:", e.toString());
+					e.printStackTrace();
+					passphrase = null;
+				}
 
 				return passphrase != null;
 			}
 
 			public boolean promptYesNo(String message) {
 
-				return SSH.this.inputBoolean(message);
+				DEBUG(message);
+
+				try {
+					return SSH.this.promptBoolean(message);
+				} catch (InterruptedException e) {
+					ERROR("Exception:", e.toString());
+					e.printStackTrace();
+				}
+				
+				return false;
 			}
 
 			public void showMessage(String message) {
-				SSH.this.showMessage(message);
+
+				DEBUG(message);
+
+				try {
+					SSH.this.showMessage(message);
+				} catch (InterruptedException e) {
+					ERROR("Exception:", e.toString());
+					e.printStackTrace();
+				}
 			}
 		});
 	}
@@ -72,13 +111,22 @@ public class SSH extends Transport {
 	@Override
 	public int read(byte[] buffer, int offset, int length) {
 
+		DEBUG("Reading", buffer.length, offset, length);
+		
 		int ret = 0;
 		try {
 			ret = inputStream.read(buffer, offset, length);
 		} catch (IOException e) {
+			ERROR("Exception:", e.toString());
 			e.printStackTrace();
 
-			showMessage("Error while reading stream.");
+			try {
+				showMessage("Error while reading stream.");
+				ERROR("Error while reading stream.");
+			} catch (InterruptedException e1) {
+				ERROR("Exception:", e.toString());
+				e1.printStackTrace();
+			}
 
 			this.disconnect();
 		}
@@ -92,9 +140,15 @@ public class SSH extends Transport {
 		try {
 			outputStream.write(buffer);
 		} catch (IOException e) {
+			ERROR("Exception:", e.toString());
 			e.printStackTrace();
 
-			showMessage("Error while writing to stream.");
+			try {
+				showMessage("Error while writing to stream.");
+			} catch (InterruptedException e1) {
+				ERROR("Exception:", e.toString());
+				e1.printStackTrace();
+			}
 
 			disconnect();
 		}
@@ -107,32 +161,57 @@ public class SSH extends Transport {
 
 	@Override
 	public void connect() {
-
-		try {
-			session.connect();
-			channel = session.openChannel("shell");
-
-			inputStream = channel.getInputStream();
-			outputStream = channel.getOutputStream();
-
-		} catch (JSchException e) {
-			e.printStackTrace();
-			showMessage("Error while connecting to server.");
-			
-			disconnect();
-		} catch (IOException e) {
-			e.printStackTrace();
-			showMessage("Error while getting streams.");
-			
-			disconnect();
-		} finally {
-			connected = true;
-
-			startRelay();
-		}
-
+		new Thread(new ConnectionRunnable()).start();
 	}
 
+	private class ConnectionRunnable implements Runnable {
+		public void run() {
+			INFO("Connecting to server.");
+			
+			try {
+				session.connect();
+				channel = session.openChannel("shell");
+
+				inputStream = channel.getInputStream();
+				outputStream = channel.getOutputStream();
+				
+				channel.connect();
+
+			} catch (JSchException e) {
+				ERROR("Exception:", e.toString());
+				e.printStackTrace();
+				try {
+					showMessage("Error while connecting to server.");
+					ERROR("Error while connecting to server:", e.toString());
+				} catch (InterruptedException e1) {
+					ERROR("Exception:", e.toString());
+					e1.printStackTrace();
+				}
+
+				disconnect();
+			} catch (IOException e) {
+				ERROR("Exception:", e.toString());
+				e.printStackTrace();
+				try {
+					showMessage("Error while getting streams.");
+					ERROR("Error while getting streams.");
+				} catch (InterruptedException e1) {
+					ERROR("Exception:", e.toString());
+					e1.printStackTrace();
+				}
+
+				disconnect();
+			} finally {
+				
+				DEBUG("Connected to server");
+				
+				connected = true;
+
+				startRelay();
+			}
+		}
+	}
+	
 	@Override
 	public void disconnect() {
 

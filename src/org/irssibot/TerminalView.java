@@ -1,51 +1,107 @@
 package org.irssibot;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
-import android.graphics.Canvas;
+import android.content.DialogInterface;
+import android.os.Handler;
+import android.os.Message;
+import android.view.KeyEvent;
 import android.view.View;
-import de.mud.terminal.VT320;
+import android.widget.EditText;
+import android.widget.Toast;
+import org.irssibot.transport.PromptMessage;
 import org.irssibot.transport.Transport;
+
+import static org.irssibot.util.LogHelper.DEBUG;
 
 /**
  * User: parkerkane
  * Date: 13.12.2010
  * Time: 9:54
  */
-public class TerminalView extends View {
-
-	private VT320 buffer;
-	private Transport transport;
+public class TerminalView extends BaseTerminalView {
 
 	public TerminalView(Context context, Transport transport) {
+
+		super(context, transport);
+
+		transport.setPromptHandler(new PromptHandler());
 		
-		super(context);
-		
-		this.transport = transport;
-		this.buffer = new VT320View();
+		transport.connect();
 	}
 
-	@Override
-	protected void onDraw(Canvas canvas) {
-
-		super.onDraw(canvas);
-
-	}
-	
-	private class VT320View extends VT320 {
-
+	private class PromptHandler extends Handler {
 		@Override
-		public void debug(String notice) {
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
 
-		}
+			final PromptMessage data = (PromptMessage) msg.obj;
 
-		@Override
-		public void write(byte[] b) {
+			DEBUG("Got prompt message:", data.type);
 
-		}
+			switch (data.type) {
+				case Message:
+					Toast.makeText(TerminalView.this.context, data.message, Toast.LENGTH_LONG).show();
+					data.release();
+					break;
 
-		@Override
-		public void write(int b) {
+				case Boolean:
 
+					AlertDialog.Builder builder = new AlertDialog.Builder(TerminalView.this.context)
+						.setCancelable(false)
+						.setTitle("SSH")
+						.setMessage(data.message)
+						.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+
+							public void onClick(DialogInterface dialog, int which) {
+								data.sendResponse(true);
+							}
+						})
+						.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+
+							public void onClick(DialogInterface dialog, int which) {
+								data.sendResponse(false);
+							}
+						});
+					
+					builder.create().show();
+					
+					break;
+
+				case String:
+					data.release();
+					break;
+
+				case Password:
+
+					final Dialog dialog = new Dialog(TerminalView.this.context);
+					
+					dialog.setTitle(data.message);
+					dialog.setContentView(R.layout.password);
+					
+					final EditText password = (EditText) dialog.findViewById(R.id.password);
+					
+					password.setText("");
+					password.setOnKeyListener(new OnKeyListener() {
+
+						public boolean onKey(View v, int keyCode, KeyEvent event) {
+							
+							if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
+								data.sendResponse(password.getText().toString());
+								
+								dialog.dismiss();
+								return true;
+							}
+							
+							return false;
+						}
+					});
+					
+					dialog.show();
+					break;
+
+			}
 		}
 	}
 }

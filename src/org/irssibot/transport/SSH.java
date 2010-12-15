@@ -111,8 +111,6 @@ public class SSH extends Transport {
 	@Override
 	public int read(byte[] buffer, int offset, int length) {
 
-		DEBUG("Reading", buffer.length, offset, length);
-		
 		int ret = 0;
 		try {
 			ret = inputStream.read(buffer, offset, length);
@@ -145,18 +143,31 @@ public class SSH extends Transport {
 
 			try {
 				showMessage("Error while writing to stream.");
+				ERROR("Error while writing to stream.");
 			} catch (InterruptedException e1) {
-				ERROR("Exception:", e.toString());
+				ERROR("Exception:", e1.toString());
 				e1.printStackTrace();
 			}
 
 			disconnect();
 		}
 	}
-
+	
 	@Override
 	public void write(int c) {
+		try {
+			outputStream.write(c);
+		} catch (IOException e) {
+			ERROR("Exception:", e.toString());
+			e.printStackTrace();
 
+			try {
+				showMessage("Error while writing to stream.");
+			} catch (InterruptedException e1) {
+				ERROR("Exception:", e1.toString());
+				e1.printStackTrace();
+			}
+		}
 	}
 
 	@Override

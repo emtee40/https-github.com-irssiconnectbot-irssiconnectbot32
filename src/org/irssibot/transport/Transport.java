@@ -22,9 +22,11 @@ import static org.irssibot.util.LogHelper.ERROR;
  */
 public abstract class Transport {
 
-	protected final AtomicReference<Handler> dataHandler        = new AtomicReference<Handler>();
+	protected final AtomicReference<Handler> dataHandler   = new AtomicReference<Handler>();
 	protected final AtomicReference<Handler> promptHandler = new AtomicReference<Handler>();
-	private final   Semaphore                responseLock       = new Semaphore(0);
+
+	private final        Semaphore responseLock   = new Semaphore(0);
+	private final static Semaphore responseUILock = new Semaphore(1);
 
 	private final Relay  relay       = new Relay(this);
 	private       Thread relayThread = null;
@@ -90,17 +92,25 @@ public abstract class Transport {
 				return;
 			}
 
-			PromptMessage msg = new PromptMessage(PromptMessage.Type.Message, responseLock, message);
+			responseUILock.acquire();
 
-			Message.obtain(promptHandler.get(), -1, msg).sendToTarget();
+			try {
 
-			responseLock.acquire();
+				PromptMessage msg = new PromptMessage(PromptMessage.Type.Message, responseLock, message);
+
+				Message.obtain(promptHandler.get(), -1, msg).sendToTarget();
+
+				responseLock.acquire();
+			} finally {
+				responseUILock.release();
+			}
 		}
+
 	}
 
 	public boolean promptBoolean(String message)
 		throws InterruptedException {
-		
+
 		boolean val = false;
 
 		synchronized (promptHandler) {
@@ -108,17 +118,24 @@ public abstract class Transport {
 				return val;
 			}
 
-			PromptMessage msg = new PromptMessage(PromptMessage.Type.Boolean, responseLock, message);
+			responseUILock.acquire();
 
-			DEBUG("Sending boolean message");
-			Message.obtain(promptHandler.get(), -1, msg).sendToTarget();
+			try {
 
-			DEBUG("Waiting for response.");
-			responseLock.acquire();
-		
-			val = msg.responseBoolean.get();
+				PromptMessage msg = new PromptMessage(PromptMessage.Type.Boolean, responseLock, message);
 
-			DEBUG("Got response:", val);
+				DEBUG("Sending boolean message");
+				Message.obtain(promptHandler.get(), -1, msg).sendToTarget();
+
+				DEBUG("Waiting for response.");
+				responseLock.acquire();
+
+				val = msg.responseBoolean.get();
+
+				DEBUG("Got response:", val);
+			} finally {
+				responseUILock.release();
+			}
 		}
 
 		return val;
@@ -126,7 +143,7 @@ public abstract class Transport {
 
 	public String promptPassword(String message)
 		throws InterruptedException {
-		
+
 		String val = null;
 
 		synchronized (promptHandler) {
@@ -134,17 +151,23 @@ public abstract class Transport {
 				return val;
 			}
 
-			PromptMessage msg = new PromptMessage(PromptMessage.Type.Password, responseLock, message);
+			responseUILock.acquire();
 
-			DEBUG("Sending password message");
-			Message.obtain(promptHandler.get(), -1, msg).sendToTarget();
+			try {
+				PromptMessage msg = new PromptMessage(PromptMessage.Type.Password, responseLock, message);
 
-			DEBUG("Waiting for response");
-			responseLock.acquire();
-			
-			val = msg.responseString.get();
-			
-			DEBUG("Got response:", "xxxxxxxxxx");
+				DEBUG("Sending password message");
+				Message.obtain(promptHandler.get(), -1, msg).sendToTarget();
+
+				DEBUG("Waiting for response");
+				responseLock.acquire();
+
+				val = msg.responseString.get();
+
+				DEBUG("Got response:", "xxxxxxxxxx");
+			} finally {
+				responseUILock.release();
+			}
 		}
 
 		return val;
@@ -152,7 +175,7 @@ public abstract class Transport {
 
 	public String promptString(String message)
 		throws InterruptedException {
-		
+
 		String val = null;
 
 		synchronized (promptHandler) {
@@ -160,13 +183,19 @@ public abstract class Transport {
 				return val;
 			}
 
-			PromptMessage msg = new PromptMessage(PromptMessage.Type.Message, responseLock, message);
+			responseUILock.acquire();
 
-			Message.obtain(promptHandler.get(), -1, msg).sendToTarget();
+			try {
+				PromptMessage msg = new PromptMessage(PromptMessage.Type.Message, responseLock, message);
 
-			responseLock.acquire();
-			
-			val = msg.responseString.get();
+				Message.obtain(promptHandler.get(), -1, msg).sendToTarget();
+
+				responseLock.acquire();
+
+				val = msg.responseString.get();
+			} finally {
+				responseUILock.release();
+			}
 		}
 		return val;
 	}
@@ -210,16 +239,16 @@ public abstract class Transport {
 
 			byte[] byteArray = byteBuffer.array();
 			char[] charArray = charBuffer.array();
-			
+
 			byteBuffer.limit(0);
 
 			while (true) {
-				
+
 				try {
 					int bytesToRead = byteBuffer.capacity() - byteBuffer.limit();
 					int offset = byteBuffer.arrayOffset() + byteBuffer.limit();
 					int bytesRead = transport.read(byteArray, offset, bytesToRead);
-					
+
 					if (bytesRead > 0) {
 						byteBuffer.limit(byteBuffer.limit() + bytesRead);
 
@@ -232,7 +261,7 @@ public abstract class Transport {
 						}
 
 						offset = charBuffer.position();
-						
+
 						DEBUG("Got data. Sending message:", offset, "bytes.");
 
 						synchronized (transport.dataHandler) {
@@ -244,7 +273,7 @@ public abstract class Transport {
 								).sendToTarget();
 							}
 						}
-						
+
 						charBuffer.clear();
 
 					} else {

@@ -4,16 +4,19 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Message;
 import android.view.*;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.Toast;
 import de.mud.terminal.VDUBuffer;
 import de.mud.terminal.VDUDisplay;
+import de.mud.terminal.VT320;
 import org.irssibot.transport.PromptMessage;
 import org.irssibot.transport.Transport;
 
@@ -30,8 +33,15 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 	private int   charWidth;
 	private int   charHeight;
 
+	private Canvas terminalCanvas;
+	private Bitmap terminalBitmap;
+
+	private boolean fullRedraw = false;
+
 	KeyCharacterMap keymap = KeyCharacterMap.load(KeyCharacterMap.BUILT_IN_KEYBOARD);
-	
+	private int charTop;
+	private InputMethodManager inputManager;
+
 	public TerminalView(Context context, final Transport transport) {
 
 		super(context, transport);
@@ -39,12 +49,16 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 		setLayoutParams(
 			new WindowManager.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
 
+		terminalCanvas = new Canvas();
+
 		buffer.setDisplay(this);
 
 		transport.setPromptHandler(new PromptHandler());
 
 		transport.connect();
 
+		inputManager = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+		
 		defaultPaint = new Paint();
 
 		defaultPaint.setAntiAlias(true);
@@ -60,22 +74,56 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 
 			public boolean onKey(View v, int keyCode, KeyEvent event) {
 				int key = keymap.get(keyCode, event.getMetaState());
-				
+
 				DEBUG("Got key data:", keyCode, event.getCharacters(), key);
-				
-				if (event.getAction() == KeyEvent.ACTION_DOWN) {
-//					buffer.putString(new String(Character.toChars(key)));
-					
-//					transport.write(key);
-					
-					transport.write(new String(Character.toChars(key)).getBytes());
+
+				if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+
+				switch (keyCode) {
+					case KeyEvent.KEYCODE_DEL:
+						buffer.keyPressed(VT320.KEY_BACK_SPACE, ' ', 0);
+						
+						return false;
 				}
-				
+
+				transport.write(new String(Character.toChars(key)).getBytes());
+
 				return false;
 			}
 		});
-		
+
 		requestFocus();
+		
+		setOnClickListener(new OnClickListener() {
+
+			public void onClick(View v) {
+				inputManager.showSoftInput(TerminalView.this, InputMethodManager.SHOW_FORCED);
+			}
+		});
+	}
+
+	@Override
+	protected void onSizeChanged(int width, int height, int oldw, int oldh) {
+		super.onSizeChanged(width, height, oldw, oldh);
+
+		DEBUG("Screen size changed:", width, height, oldw, oldh);
+
+		if (terminalBitmap != null) {
+			terminalBitmap.recycle();
+		}
+
+		terminalBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+
+		terminalCanvas = new Canvas(terminalBitmap);
+
+		int terminalWidth = (int) Math.ceil(width / charWidth);
+		int terminalHeight = (int) Math.ceil(height / charHeight);
+
+		transport.resize(terminalWidth, terminalHeight, width, height);
+
+		buffer.setScreenSize(terminalWidth, terminalHeight, false);
+
+		redraw();
 	}
 
 	@Override
@@ -83,44 +131,66 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 
 		DEBUG("Draw screen.");
 
-		super.onDraw(canvas);
-
-		canvas.drawARGB(255, 0, 0, 0);
+//		super.onDraw(terminalCanvas);
 
 		synchronized (buffer) {
 
+			boolean entireDirty = buffer.update[0] || fullRedraw;
+
 			for (int y = 0; y < buffer.height; y++) {
 
-				if (!buffer.update[y + 1]) {
+				if (!buffer.update[y + 1] && !entireDirty) {
 					continue;
 				}
 
+				buffer.update[y + 1] = false;
+
 				for (int x = 0; x < buffer.width; x++) {
 
-//					defaultPaint.setColor(0xFF000000);
-//
-//					canvas.clipRect(
-//						x * charWidth, y * charHeight,
-//						(x + 1) * charWidth, (y + 1) * charHeight
-//
-//					);
+					int addr = 0;
+					int curAttr = buffer.charAttributes[buffer.windowBase + y][x];
+
+					while (x + addr < buffer.width &&
+						   buffer.charAttributes[buffer.windowBase + y][x + addr] == curAttr) {
+						addr++;
+					}
+
+					defaultPaint.setColor(0xFF000000);
+
+					terminalCanvas.save(Canvas.CLIP_SAVE_FLAG);
+
+					terminalCanvas.clipRect(
+						x * charWidth, y * charHeight,
+						(x + addr) * charWidth, (y + 1) * charHeight
+
+					);
+
+					terminalCanvas.drawPaint(defaultPaint);
 
 					defaultPaint.setColor(0xFFFFFFFF);
 
-					canvas.drawText(
+					terminalCanvas.drawText(
 						buffer.charArray[buffer.windowBase + y],
 						x,
-						1,
+						addr,
 						x * charWidth,
-						y * charHeight,
+						(y * charHeight) - charTop,
 						defaultPaint);
 
-//					canvas.restore();
+					terminalCanvas.restore();
 
+					
+					x+= addr-1;
 				}
+
 			}
+
+			buffer.update[0] = false;
 		}
 
+		fullRedraw = false;
+
+		canvas.drawBitmap(terminalBitmap, 0, 0, null);
 	}
 
 	public void setFontSize(float size) {
@@ -134,7 +204,9 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 		charWidth = (int) Math.ceil(widths[0]);
 		charHeight = (int) Math.ceil(fm.descent - fm.top);
 
-		invalidate();
+		charTop = (int) Math.ceil(fm.top);
+
+		redraw();
 	}
 
 	public VDUBuffer getVDUBuffer() {
@@ -143,6 +215,7 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 
 	public void redraw() {
 		invalidate();
+		fullRedraw = true;
 	}
 
 	public void updateScrollBar() {

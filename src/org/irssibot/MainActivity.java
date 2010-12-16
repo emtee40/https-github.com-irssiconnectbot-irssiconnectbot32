@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.VideoView;
 import com.jcraft.jsch.JSchException;
 import org.irssibot.transport.SSH;
 import org.irssibot.transport.Transport;

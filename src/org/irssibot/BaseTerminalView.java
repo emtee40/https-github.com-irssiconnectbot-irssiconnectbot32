@@ -40,8 +40,10 @@ public class BaseTerminalView extends View {
 		this.context = context;
 
 		this.buffer = new VT320View();
-
+		
 		this.transport.setDataHandler(dataHandler);
+		
+		buffer.showCursor(true);
 	}
 
 	protected class VT320View extends VT320 {
@@ -53,12 +55,12 @@ public class BaseTerminalView extends View {
 
 		@Override
 		public void write(byte[] b) {
-
+			transport.write(b);
 		}
 
 		@Override
 		public void write(int b) {
-
+			transport.write(b);
 		}
 	}
 }

@@ -26,6 +26,10 @@ public class SSH extends Transport {
 
 	private InputStream  inputStream;
 	private OutputStream outputStream;
+	private int width = 10;
+	private int height = 10;
+	private int localWidth = 320;
+	private int localHeight = 200;
 
 	public SSH(String username, String host, int port)
 		throws JSchException {
@@ -176,7 +180,12 @@ public class SSH extends Transport {
 
 	@Override
 	public void connect() {
-		new Thread(new ConnectionRunnable()).start();
+		
+		Thread conn = new Thread(new ConnectionRunnable());
+		
+		conn.setName("Connection");
+		conn.setDaemon(true);
+		conn.start();
 	}
 
 	private class ConnectionRunnable implements Runnable {
@@ -190,7 +199,9 @@ public class SSH extends Transport {
 				inputStream = channel.getInputStream();
 				outputStream = channel.getOutputStream();
 
-				channel.setPtyType("xterm-color", 80, 50, 640, 480);
+				DEBUG("setting ptyType:", width, height);
+				
+				channel.setPtyType("xterm-color", width, height, localWidth, localHeight);
 
 				channel.connect();
 
@@ -228,7 +239,23 @@ public class SSH extends Transport {
 			}
 		}
 	}
-	
+
+	@Override
+	public void resize(int width, int height, int localWidth, int localHeight) {
+
+		this.width = width;
+		this.height = height;
+
+		this.localWidth = localWidth;
+		this.localHeight = localHeight;
+		
+		if (channel == null) return;
+		
+		synchronized (channel) {
+			channel.setPtySize(width, height, localWidth, localHeight);
+		}
+	}
+
 	@Override
 	public void disconnect() {
 

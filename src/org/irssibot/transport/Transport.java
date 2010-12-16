@@ -40,6 +40,8 @@ public abstract class Transport {
 	public abstract void connect();
 
 	public abstract void disconnect();
+	
+	public abstract void resize(int width, int height, int localWidth, int localHeight);
 
 	public void setDataHandler(Handler handler) {
 		synchronized (dataHandler) {

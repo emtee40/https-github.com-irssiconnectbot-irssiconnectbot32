@@ -11,6 +11,8 @@
 	
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="true">
         <activity android:name=".MainActivity"
+				  android:configChanges="keyboardHidden|orientation"
+				  android:windowSoftInputMode="stateAlwaysVisible|adjustResize"
                   android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

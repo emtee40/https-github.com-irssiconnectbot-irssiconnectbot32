@@ -6,17 +6,16 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.AbsListView;
 import android.widget.EditText;
-import android.widget.VideoView;
 import com.jcraft.jsch.JSchException;
 import org.irssibot.transport.SSH;
 import org.irssibot.transport.Transport;
 import org.irssibot.util.LogHelper;
 
 public class MainActivity extends Activity {
+
+	public static boolean isPortrait = true;
 
 	private Transport transport;
 
@@ -36,7 +35,7 @@ public class MainActivity extends Activity {
 		dialog.setContentView(R.layout.connect);
 
 		final EditText server = (EditText) dialog.findViewById(R.id.host);
-		
+
 		server.setText("");
 		server.setOnKeyListener(new View.OnKeyListener() {
 
@@ -45,7 +44,9 @@ public class MainActivity extends Activity {
 
 					boolean res = connectToServer(server.getText().toString());
 
-					if (res) dialog.dismiss();
+					if (res) {
+						dialog.dismiss();
+					}
 
 					return res;
 				}
@@ -53,8 +54,16 @@ public class MainActivity extends Activity {
 				return false;
 			}
 		});
-		
+
 		dialog.show();
+	}
+
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+
+		// TODO save this to somewhere better place
+		isPortrait = newConfig.orientation == Configuration.ORIENTATION_PORTRAIT;
 	}
 
 	@Override
@@ -83,7 +92,7 @@ public class MainActivity extends Activity {
 
 		if (transport != null) {
 			TerminalView tv = new TerminalView(this, transport);
-			
+
 			setContentView(tv);
 		}
 

@@ -1,29 +1,31 @@
 package org.irssibot;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.*;
-import android.inputmethodservice.InputMethodService;
-import android.os.Bundle;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Message;
-import android.text.Editable;
-import android.util.Printer;
-import android.view.*;
-import android.view.inputmethod.*;
+import android.view.KeyCharacterMap;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.Toast;
 import de.mud.terminal.VDUBuffer;
 import de.mud.terminal.VDUDisplay;
-import de.mud.terminal.VT320;
 import org.irssibot.transport.PromptMessage;
 import org.irssibot.transport.Transport;
+import org.irssibot.util.Colors;
 
 import static org.irssibot.util.LogHelper.DEBUG;
-import static org.irssibot.util.LogHelper.ERROR;
 
 /**
  * User: parkerkane
@@ -49,7 +51,7 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 	public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
 		outAttrs.imeOptions = EditorInfo.IME_ACTION_SEND;
 		outAttrs.inputType = EditorInfo.TYPE_CLASS_TEXT;
-		
+
 		return super.onCreateInputConnection(outAttrs);
 	}
 
@@ -70,7 +72,7 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 		transport.setPromptHandler(new PromptHandler());
 
 		transport.connect();
-		
+
 		inputManager = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
 
 		defaultPaint = new Paint();
@@ -131,6 +133,8 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 
 			boolean entireDirty = buffer.update[0] || fullRedraw;
 
+			int bg, fg, fgColor, bgColor;
+
 			for (int y = 0; y < buffer.height; y++) {
 
 				if (!buffer.update[y + 1] && !entireDirty) {
@@ -149,7 +153,28 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 						addr++;
 					}
 
-					defaultPaint.setColor(0xFF000000);
+
+					if ((curAttr & VDUBuffer.COLOR_FG) != 0) {
+						fgColor = ((curAttr & VDUBuffer.COLOR_FG) >> VDUBuffer.COLOR_FG_SHIFT) - 1;
+					} else {
+						fgColor = 15;
+						
+					}
+
+					if (fgColor < 8 && (curAttr & VDUBuffer.BOLD) != 0) {
+						fg = Colors.defaults[fgColor + 8];
+					} else {
+						fg = Colors.defaults[fgColor];
+					}
+
+					// check if background color attribute is set
+					if ((curAttr & VDUBuffer.COLOR_BG) != 0) {
+						bg = Colors.defaults[((curAttr & VDUBuffer.COLOR_BG) >> VDUBuffer.COLOR_BG_SHIFT) - 1];
+					} else {
+						bg = Colors.defaults[0];
+					}
+
+					defaultPaint.setColor(bg);
 
 					terminalCanvas.save(Canvas.CLIP_SAVE_FLAG);
 
@@ -161,7 +186,7 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 
 					terminalCanvas.drawPaint(defaultPaint);
 
-					defaultPaint.setColor(0xFFFFFFFF);
+					defaultPaint.setColor(fg);
 
 					terminalCanvas.drawText(
 						buffer.charArray[buffer.windowBase + y],
@@ -182,20 +207,20 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 
 			int cursorColumn = buffer.getCursorColumn();
 			int cursorRow = buffer.getCursorRow();
-			
+
 			defaultPaint.setColor(0x3FFFFFFF);
-			
+
 			terminalCanvas.save(Canvas.CLIP_SAVE_FLAG);
-			
+
 			terminalCanvas.clipRect(
 				cursorColumn * charWidth, cursorRow * charHeight,
 				(cursorColumn + 1) * charWidth, (cursorRow + 1) * charHeight
 			);
-			
+
 			terminalCanvas.drawPaint(defaultPaint);
-			
+
 			terminalCanvas.restore();
-			
+
 		}
 
 		fullRedraw = false;

@@ -2,9 +2,13 @@ package org.irssibot;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.AbsListView;
 import android.widget.EditText;
 import android.widget.VideoView;
 import com.jcraft.jsch.JSchException;
@@ -32,7 +36,7 @@ public class MainActivity extends Activity {
 		dialog.setContentView(R.layout.connect);
 
 		final EditText server = (EditText) dialog.findViewById(R.id.host);
-
+		
 		server.setText("");
 		server.setOnKeyListener(new View.OnKeyListener() {
 

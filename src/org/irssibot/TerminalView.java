@@ -1,17 +1,19 @@
 package org.irssibot;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.Typeface;
+import android.graphics.*;
+import android.inputmethodservice.InputMethodService;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.Editable;
+import android.util.Printer;
 import android.view.*;
-import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.*;
 import android.widget.EditText;
 import android.widget.Toast;
 import de.mud.terminal.VDUBuffer;
@@ -21,6 +23,7 @@ import org.irssibot.transport.PromptMessage;
 import org.irssibot.transport.Transport;
 
 import static org.irssibot.util.LogHelper.DEBUG;
+import static org.irssibot.util.LogHelper.ERROR;
 
 /**
  * User: parkerkane
@@ -39,15 +42,26 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 	private boolean fullRedraw = false;
 
 	KeyCharacterMap keymap = KeyCharacterMap.load(KeyCharacterMap.BUILT_IN_KEYBOARD);
-	private int charTop;
+	private int                charTop;
 	private InputMethodManager inputManager;
+
+	@Override
+	public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+		outAttrs.imeOptions = EditorInfo.IME_ACTION_SEND;
+		outAttrs.inputType = EditorInfo.TYPE_CLASS_TEXT;
+		
+		return super.onCreateInputConnection(outAttrs);
+	}
 
 	public TerminalView(Context context, final Transport transport) {
 
 		super(context, transport);
 
-		setLayoutParams(
-			new WindowManager.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
+		WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+		lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+		lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+		DEBUG(lp);
+		setLayoutParams(lp);
 
 		terminalCanvas = new Canvas();
 
@@ -56,9 +70,9 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 		transport.setPromptHandler(new PromptHandler());
 
 		transport.connect();
-
-		inputManager = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
 		
+		inputManager = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+
 		defaultPaint = new Paint();
 
 		defaultPaint.setAntiAlias(true);
@@ -70,30 +84,10 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 		setFocusable(true);
 		setFocusableInTouchMode(true);
 
-		setOnKeyListener(new OnKeyListener() {
-
-			public boolean onKey(View v, int keyCode, KeyEvent event) {
-				int key = keymap.get(keyCode, event.getMetaState());
-
-				DEBUG("Got key data:", keyCode, event.getCharacters(), key);
-
-				if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
-
-				switch (keyCode) {
-					case KeyEvent.KEYCODE_DEL:
-						buffer.keyPressed(VT320.KEY_BACK_SPACE, ' ', 0);
-						
-						return false;
-				}
-
-				transport.write(new String(Character.toChars(key)).getBytes());
-
-				return false;
-			}
-		});
+		setOnKeyListener(new TerminalKeyListener(this, transport, buffer));
 
 		requestFocus();
-		
+
 		setOnClickListener(new OnClickListener() {
 
 			public void onClick(View v) {
@@ -121,7 +115,7 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 
 		transport.resize(terminalWidth, terminalHeight, width, height);
 
-		buffer.setScreenSize(terminalWidth, terminalHeight, false);
+		buffer.setScreenSize(terminalWidth, terminalHeight, true);
 
 		redraw();
 	}
@@ -179,13 +173,29 @@ public class TerminalView extends BaseTerminalView implements VDUDisplay {
 
 					terminalCanvas.restore();
 
-					
-					x+= addr-1;
+					x += addr - 1;
 				}
 
 			}
 
 			buffer.update[0] = false;
+
+			int cursorColumn = buffer.getCursorColumn();
+			int cursorRow = buffer.getCursorRow();
+			
+			defaultPaint.setColor(0x3FFFFFFF);
+			
+			terminalCanvas.save(Canvas.CLIP_SAVE_FLAG);
+			
+			terminalCanvas.clipRect(
+				cursorColumn * charWidth, cursorRow * charHeight,
+				(cursorColumn + 1) * charWidth, (cursorRow + 1) * charHeight
+			);
+			
+			terminalCanvas.drawPaint(defaultPaint);
+			
+			terminalCanvas.restore();
+			
 		}
 
 		fullRedraw = false;

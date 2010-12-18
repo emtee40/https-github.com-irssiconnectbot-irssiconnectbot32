@@ -27,7 +27,7 @@ class TerminalKeyListener implements View.OnKeyListener {
 		if (event.getCharacters() != null) {
 			transport.write(event.getCharacters().getBytes());
 			
-			return false;
+			return true;
 		}
 		
 		if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
@@ -35,17 +35,21 @@ class TerminalKeyListener implements View.OnKeyListener {
 		switch (keyCode) {
 			case KeyEvent.KEYCODE_DPAD_LEFT:
 				buffer.keyPressed(VT320.KEY_LEFT, ' ', 0);
-				return false;
+				return true;
 			
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
 				buffer.keyPressed(VT320.KEY_RIGHT, ' ', 0);
-				return false;
-				
+				return true;
+
+			case KeyEvent.KEYCODE_ENTER:
+//				buffer.keyPressed(VT320.KEY_ENTER, ' ', 0);
+				buffer.keyTyped(VT320.KEY_ENTER, ' ', 0);
+				return true;
 			
 			case KeyEvent.KEYCODE_DEL:
 				buffer.keyPressed(VT320.KEY_BACK_SPACE, ' ', 0);
 				
-				return false;
+				return true;
 		}
 
 		transport.write(new String(Character.toChars(key)).getBytes());

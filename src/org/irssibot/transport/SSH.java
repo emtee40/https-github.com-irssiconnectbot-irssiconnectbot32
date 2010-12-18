@@ -165,6 +165,7 @@ public class SSH extends Transport {
 	public void write(int c) {
 		try {
 			outputStream.write(c);
+			outputStream.flush();
 		} catch (IOException e) {
 			ERROR("Exception:", e.toString());
 			e.printStackTrace();

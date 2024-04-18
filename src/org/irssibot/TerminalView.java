@@ -8,7 +8,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.ResultReceiver;
+import android.view.GestureDetector;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
@@ -100,16 +102,9 @@ public class TerminalView extends BaseTerminalView {
 		setOnKeyListener(new TerminalKeyListener(this, transport, buffer));
 
 		requestFocus();
-
-		setOnClickListener(new OnClickListener() {
-
-			public void onClick(View v) {
-				inputManager.showSoftInput(TerminalView.this, InputMethodManager.SHOW_FORCED);
-				checkSoftKey = true;
-				isSoftKeyVisible = true;
-				resizeScreen();
-			}
-		});
+		
+		final GestureDetector detect = new GestureDetector(new GestureListener());
+		setOnTouchListener(new TouchListener(detect));		
 	}
 
 	private void resizeScreen() {
